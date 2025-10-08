@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 
 // Selected images for the slideshow (2, 4, 11, 23)
 const slideshowImages = [
+  "/images/IMG_20250715_104808_946.jpg", // Image 23
   "/images/IMG_20250715_104145_590.jpg", // Image 2
   "/images/IMG_20250715_104210_092.jpg", // Image 4
   "/images/IMG_20250715_104322_547.jpg", // Image 11
-  "/images/IMG_20250715_104808_946.jpg", // Image 23
 ]
 
 export function Hero() {
