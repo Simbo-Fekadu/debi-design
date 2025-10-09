@@ -5,16 +5,20 @@ import { Button } from './ui/button';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 // Use a representative hero image from assets
 import heroImg from '../assets/images/IMG_20250715_104808_940.jpg';
-// load sp* images for the hero slider using Vite glob
-const spModules = import.meta.glob('../assets/images/**/sp*.{jpg,jpeg,png,JPG,JPEG,PNG}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const spGallery = Object.values(spModules || {});
+// Curated small set for hero slider (explicit imports keep dist small)
+import sp2 from '../assets/images/Women/sp2.jpg?url';
+import sp3 from '../assets/images/Women/sp3.jpg?url';
+import sp5 from '../assets/images/Women/sp5.jpg?url';
+import sp4 from '../assets/images/sp4.jpg?url';
+import sp02 from '../assets/images/Kids/sp02.jpg?url';
+import sp7 from '../assets/images/Men/sp7.JPG?url';
 
 interface HeroProps {
   onNavigate: (section: string) => void;
 }
 
 export function Hero({ onNavigate }: HeroProps) {
-  const [images] = React.useState<string[]>(spGallery.length ? spGallery : [heroImg]);
+  const [images] = React.useState<string[]>([sp2, sp3, sp5, sp4, sp02, sp7].filter(Boolean).length ? [sp2, sp3, sp5, sp4, sp02, sp7] : [heroImg]);
   const [current, setCurrent] = React.useState(0);
 
   React.useEffect(() => {

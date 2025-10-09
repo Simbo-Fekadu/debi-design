@@ -1,19 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { Button } from './ui/button';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { analyzeImages, clusterByHash, AnalyzedImage } from '../utils/imageUtils';
 
-// Load images from the local assets/images folder (including subfolders) using Vite's glob
-const imageModules = import.meta.glob('../assets/images/**/*.{jpg,jpeg,png,JPG,JPEG,PNG,jpg}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const galleryImages = Object.values(imageModules || {});
+// Config: limit how many images we include in the build. Featured (sp*) files are prioritized.
+const MAX_TOTAL_IMAGES = 24; // adjust to your preference
+const PRIORITIZE_FEATURED = true; // put files starting with 'sp' first
+
+// Lazy glob so we only import what we actually need (reduces files emitted to dist)
+const imageImporters = import.meta.glob('../assets/images/**/*.{jpg,jpeg,png,JPG,JPEG,PNG}', { query: '?url' }) as Record<string, () => Promise<{ default: string }>>;
+
+// Helper to derive a dedupe key from a path (basename, no extension, case-insensitive)
+const toKeyFromPath = (pathStr: string) => {
+  try {
+    const p = pathStr.split('/').pop() || pathStr;
+    const base = p.split('?')[0].toLowerCase();
+    return base.replace(/\.[^.]+$/, '');
+  } catch (e) {
+    return pathStr.toLowerCase();
+  }
+};
 
 // Fallback single image (kept for legacy cases) — use a local asset from src/assets
 import coralStripeDesign from '../assets/2858f785b344b0b3dec420a775218a7235d28bdf.png';
 
+// Prepare a deduped, prioritized, and limited set of image module paths
+const allPaths = Object.keys(imageImporters);
+const prioritizedLimitedPaths = (() => {
+  // Deduplicate by basename (no extension)
+  const byKey = new Map<string, string>();
+  for (const p of allPaths) {
+    const key = toKeyFromPath(p);
+    if (!byKey.has(key)) byKey.set(key, p);
+  }
+  const deduped = Array.from(byKey.values());
+  // Prioritize featured (sp*) if enabled
+  const isFeatured = (p: string) => /(^|\/)sp[^/]*\.[a-z0-9]+$/i.test(p);
+  let ordered = deduped;
+  if (PRIORITIZE_FEATURED) {
+    const featured: string[] = [];
+    const rest: string[] = [];
+    for (const p of deduped) (isFeatured(p) ? featured : rest).push(p);
+    ordered = [...featured, ...rest];
+  }
+  return ordered.slice(0, MAX_TOTAL_IMAGES);
+})();
+
 export function Collections() {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
   // Carousel state removed — collections render as a grid now.
 
   const categories = [
@@ -27,14 +64,36 @@ export function Collections() {
   // COLLECTION DATA
   // Add your products here with actual images, titles, descriptions and prices
   // ============================================
-  // Build a simple collections structure using images found in src/assets/images
-  const galleryItems = (galleryImages.length ? galleryImages : [coralStripeDesign]).map((src, i) => ({
-    id: i + 1,
-    title: `Design ${i + 1}`,
-    description: 'Traditional patterns reimagined',
-    image: src,
-    price: ''
-  }));
+  // Load only the prioritized & limited paths into URLs (lazy import)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const urls = await Promise.all(
+          prioritizedLimitedPaths.map(async (p) => {
+            const mod = await imageImporters[p]();
+            return mod.default as string;
+          })
+        );
+        if (!cancelled) setSelectedUrls(urls);
+      } catch (e) {
+        if (!cancelled) setSelectedUrls([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Build a simple collections structure using the loaded URLs
+  const galleryItems = useMemo(() => {
+    const list = selectedUrls.length ? selectedUrls : [coralStripeDesign];
+    return list.map((src: string, i: number) => ({
+      id: i + 1,
+      title: `Design ${i + 1}`,
+      description: 'Traditional patterns reimagined',
+      image: src,
+      price: ''
+    }));
+  }, [selectedUrls]);
 
   // Helper to classify images by URL/filename
   const classifyUrl = (url?: string): 'women' | 'men' | 'kids' | 'uncategorized' => {
@@ -51,7 +110,7 @@ export function Collections() {
 
   // Build collections by classification. 'all' will be the union.
   const collections: Record<string, any[]> = { women: [], men: [], kids: [], all: [] };
-  galleryItems.forEach((it) => {
+  galleryItems.forEach((it: { image: string }) => {
     const cat = classifyUrl(it.image);
     if (cat === 'uncategorized') {
       collections.all.push(it);
@@ -69,7 +128,8 @@ export function Collections() {
   useEffect(() => {
     let mounted = true;
     async function runAnalysis() {
-      const urls = galleryItems.map(i => i.image);
+      if (!selectedUrls.length) return;
+      const urls = selectedUrls;
       const analyzed = await analyzeImages(urls);
       // order analyzed by quality descending
       analyzed.sort((a, b) => b.score - a.score);
@@ -78,14 +138,14 @@ export function Collections() {
       setClusters(cls);
       // init indices
       const idxs: Record<number, number> = {};
-      cls.forEach((c, i) => (idxs[i] = 0));
+      cls.forEach((c: AnalyzedImage[], i: number) => (idxs[i] = 0));
       setClusterIndices(idxs);
     }
     runAnalysis();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [selectedUrls]);
 
   // Carousel helpers removed.
 
@@ -100,7 +160,7 @@ export function Collections() {
     type Card = { id: string; url: string; title?: string; description?: string; score?: number; count?: number };
     let cards: Card[] = [];
     if (clusters && clusters.length > 0) {
-      cards = clusters.map((cluster, i) => ({
+      cards = clusters.map((cluster: AnalyzedImage[], i: number) => ({
         id: `cluster-${i}`,
         url: cluster[0].url,
         title: `Cluster ${i + 1}`,

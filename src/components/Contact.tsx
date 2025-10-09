@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Mail, Phone, MapPin, Send,Globe } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Globe, Instagram } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner@2.0.3';
 
