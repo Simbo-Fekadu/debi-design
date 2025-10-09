@@ -75,6 +75,7 @@ const itemsPerPage = 6
 export function Gallery() {
   const [activeCategory, setActiveCategory] = useState("All")
   const [showAll, setShowAll] = useState(false)
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
 
   // Temporary classification: cycle through Men, Women, Kids.
   // Once you move images into /public/images/Men, /Women, /Kids you can replace this with explicit arrays.
@@ -151,13 +152,23 @@ export function Gallery() {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <CardContent className="p-0">
-                <div className="relative overflow-hidden">
+                <div
+                  className="tile relative overflow-hidden group"
+                  onMouseEnter={() => setHoveredId(item.id)}
+                  onMouseLeave={() => setHoveredId((id: number | null) => (id === item.id ? null : id))}
+                  onFocus={() => setHoveredId(item.id)}
+                  onBlur={() => setHoveredId((id: number | null) => (id === item.id ? null : id))}
+                  onClick={() => setHoveredId((id: number | null) => (id === item.id ? null : item.id))}
+                  data-colored={hoveredId === item.id ? "true" : undefined}
+                  tabIndex={0}
+                >
                   <img
                     src={item.image || "/placeholder.svg"}
                     alt={item.title}
-                    className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-80 object-cover filter grayscale group-hover:grayscale-0 group-hover:[filter:grayscale(0%)] hover:[filter:grayscale(0%)] hover:brightness-110 group-hover:brightness-110 group-hover:scale-105 transition-all duration-500"
+                    style={hoveredId === item.id ? { filter: "grayscale(0%) brightness(1.1)" } : undefined}
                   />
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all duration-300"></div>
+                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all duration-300 pointer-events-none"></div>
                 </div>
                 <div className="p-6">
                   <span className="text-sm text-accent font-medium">{item.category}</span>

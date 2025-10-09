@@ -173,3 +173,8 @@
     }
   }
 }
+
+/* Ensure gallery images regain color on hover (desktop) even if other rules apply */
+.tile:hover img {
+  filter: grayscale(0%) brightness(1.1) !important;
+}

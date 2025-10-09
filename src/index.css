@@ -500,6 +500,14 @@
 }
 
 @layer utilities {
+  /* Force gallery images to regain color on hover (desktop) */
+  .tile:hover img {
+    filter: grayscale(0%) brightness(1.1) !important;
+  }
+  /* Also force color when the wrapper sets data-colored="true" (for click/tap) */
+  .tile[data-colored="true"] img {
+    filter: grayscale(0%) brightness(1.1) !important;
+  }
   .absolute {
     position: absolute;
   }

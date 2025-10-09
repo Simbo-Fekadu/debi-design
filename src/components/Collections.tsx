@@ -162,7 +162,7 @@ export function Collections() {
           {toShow.map((c) => (
             <motion.div key={c.id} className="group relative" whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
               <div className="aspect-[3/4] overflow-hidden bg-muted relative">
-                <ImageWithFallback src={c.url} alt={c.title || c.id} className="w-full h-full object-cover transition-all duration-700" style={{ objectPosition: 'center 10%' }} enableTapToToggle={true} />
+                <ImageWithFallback src={c.url} alt={c.title || c.id} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" style={{ objectPosition: 'center 10%' }} enableTapToToggle={true} />
                 <div className="absolute bottom-3 right-3 w-28 h-8 rounded bg-white/80 backdrop-blur-sm pointer-events-none" />
               </div>
               <div className="mt-4">
